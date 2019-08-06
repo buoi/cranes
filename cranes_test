@@ -1,5 +1,5 @@
 __author__ = 'buio'
-__version__ = '0.2.0'
+__version__ = '0.3.0'
 
 
 # script to synchronize 2 or more OctoPrint robots by gcode scheduling
@@ -70,11 +70,11 @@ def retrieve(printer):
         #print(datastore)
         #print(datastore['state']['flags']['paused'])
 
-def select_crane_file(printer,num,layer_number):
+def select_crane_file(printer,num,layer):
     # POST / api / files / local / folder / a_10.gcode
     # HTTP / 1.1
     port = 8000
-    folder = str(layer_number)
+    folder = str(layer)
     endpoint = printer[2] + '_' + str(num) + ".gcode"
     # print(endpoint)
     host = printer[0]
@@ -130,15 +130,17 @@ def print_selected(printer):
     )
     print("starting print on " + printer[2])
     return r.status_code
-print ("This is Crane WASP cooperative system")
-print ("Good luck printing today, you'll need it!")
-print (" ")
+
+
+print("This is Crane WASP cooperative system")
+print("Good luck printing today, you'll need it!")
+print(" ")
 layer = int(input("Please select the layer number: "))
-print ("Layer number ", layer, " selected")
+print("Layer number ", layer, " selected")
 i = int(input("Please select first gcode number: "))
-print ("Gcode number ", i, " selected")
-select_crane_file(alf, i, layer)
-select_crane_file(bet, i, layer)
+print("Gcode number ", i, " selected")
+#select_crane_file(alf, i, layer)
+#select_crane_file(bet, i, layer)
 
 #print_selected(alf)
 #print_selected(bet)
@@ -161,7 +163,7 @@ while True:
     print(bet[2] + " " + state_text_bet + " " + str(i))
 
     if state_text_alf == 'Operational' and state_text_bet == 'Operational':
-        print("ferme")
+        print("stampa prossimo file")
 
         if select_crane_file(alf, i, layer) == 204:
             print_selected(alf)
@@ -175,10 +177,15 @@ while True:
             i = i + 1
             selected_alf = False
             selected_bet = False
+        else
+            if not selected_alf and not selected_bet
+                layer = layer + 1
+
+
 
     time.sleep(1)
-
-
+    
+    
 """
 # TODO pausa manuale
 
@@ -200,8 +207,3 @@ while True:
             resume()
 
 """
-
-#host_Alf = '192.168.12.44'
-#key_Alf = 'E8A924FBF05F47BEB05D80E43AB9080B'
-#host_Bet = '192.168.12.37'
-#key_Bet = 'E8A924FBF05F47BEB05D80E43AB9080B'
