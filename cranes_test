@@ -44,6 +44,7 @@ def resume_pause(printer):
     )
     print("resumed")
 
+
 def retrieve(printer):
 
     port = 8000
@@ -69,6 +70,7 @@ def retrieve(printer):
 
         #print(datastore)
         #print(datastore['state']['flags']['paused'])
+
 
 def select_crane_file(printer,num,layer):
     # POST / api / files / local / folder / a_10.gcode
@@ -103,6 +105,7 @@ def select_crane_file(printer,num,layer):
     )
     # print("selecting " + endpoint)
     return r.status_code
+
 
 def print_selected(printer):
     port = 8000
@@ -153,9 +156,9 @@ while True:
     selected_alf = False
     selected_bet = False
 
-    #oper_alf = retrieve(alf)['state']['flags']['operational']
-    #oper_bet = retrieve(bet)['state']['flags']['operational']
-    #print(retrieve(alf))
+    # oper_alf = retrieve(alf)['state']['flags']['operational']
+    # oper_bet = retrieve(bet)['state']['flags']['operational']
+    # print(retrieve(alf))
     state_text_alf = retrieve(alf)['state']['text']
     state_text_bet = retrieve(bet)['state']['text']
 
@@ -177,15 +180,15 @@ while True:
             i = i + 1
             selected_alf = False
             selected_bet = False
-        else
-            if not selected_alf and not selected_bet
+        else:
+            if not selected_alf and not selected_bet:
                 layer = layer + 1
 
 
 
     time.sleep(1)
-    
-    
+
+
 """
 # TODO pausa manuale
 
