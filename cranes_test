@@ -1,5 +1,5 @@
 __author__ = 'buio'
-__version__ = '0.3.0'
+__version__ = '0.1.0'
 
 
 # script to synchronize 2 or more OctoPrint robots by gcode scheduling
@@ -12,9 +12,72 @@ import requests
 import time
 
 # coding: (host,key,gcode name identifier)
-alf = ('192.168.1.5','E8A924FBF05F47BEB05D80E43AB9080B','a')
-bet = ('192.168.1.6','E8A924FBF05F47BEB05D80E43AB9080B','b')
 
+"""def layer():
+    set_layer=layer_num.value
+    print ("Layer number ", set_layer , " selected")
+    return set_layer
+    """
+
+"""def i():
+    set_i=gcode.value
+    print ("Gcode number ", set_i , " selected")
+    return set_i
+    """
+ 
+def start(k):
+    if k==1:
+        start_button.disable()
+        stop_button.enable()
+        text.repeat(1000,main_program, args=[1])
+
+    else:
+        start_button.enable()
+        stop_button.disable()
+        text.after(2000,main_program, args=[0])
+
+def main_program(j):
+    if j==1:
+        
+        i=gcode.value
+        layer=layer_num.value
+        
+        alf = (alf_ip.value,'E8A924FBF05F47BEB05D80E43AB9080B','a')
+        bet = (bet_ip.value,'E8A924FBF05F47BEB05D80E43AB9080B','b')
+
+
+        select_crane_file(alf, i, layer)
+        select_crane_file(bet, i, layer)
+
+        print_selected(alf)
+        print_selected(bet)
+        
+        i=i+1
+        
+        state_text_alf = retrieve(alf)['state']['text']
+        state_text_bet = retrieve(bet)['state']['text']
+        alf_state = alf[2] + " " + state_text_alf + " " + str(i-1)
+        alf_gui_state = Text(alf_box, grid=[0,5], text=alf_state, align="left")
+        print(bet[2] + " " + state_text_bet + " " + str(i-1))
+
+        if state_text_alf == 'Operational' and state_text_bet == 'Operational':
+            print("ferme")
+
+            if select_crane_file(alf, i, layer) == 204:
+                print_selected(alf)
+                selected_alf = True
+
+            if select_crane_file(bet, i, layer) == 204:
+                print_selected(bet)
+                selected_bet = True
+
+            if selected_alf and selected_bet:
+                i = i + 1
+                selected_alf = False
+                selected_bet = False
+        
+        
+    
 def resume_pause(printer):
 
     port = 8000
@@ -44,7 +107,6 @@ def resume_pause(printer):
     )
     print("resumed")
 
-
 def retrieve(printer):
 
     port = 8000
@@ -71,12 +133,11 @@ def retrieve(printer):
         #print(datastore)
         #print(datastore['state']['flags']['paused'])
 
-
-def select_crane_file(printer,num,layer):
+def select_crane_file(printer,num,layernumber):
     # POST / api / files / local / folder / a_10.gcode
     # HTTP / 1.1
     port = 8000
-    folder = str(layer)
+    folder = str(layernumber)
     endpoint = printer[2] + '_' + str(num) + ".gcode"
     # print(endpoint)
     host = printer[0]
@@ -103,9 +164,8 @@ def select_crane_file(printer,num,layer):
         data=data,
         headers=headers
     )
-    # print("selecting " + endpoint)
+    print("selecting " + endpoint)
     return r.status_code
-
 
 def print_selected(printer):
     port = 8000
@@ -135,38 +195,74 @@ def print_selected(printer):
     return r.status_code
 
 
-print("This is Crane WASP cooperative system")
-print("Good luck printing today, you'll need it!")
-print(" ")
-layer = int(input("Please select the layer number: "))
-print("Layer number ", layer, " selected")
-i = int(input("Please select first gcode number: "))
-print("Gcode number ", i, " selected")
-#select_crane_file(alf, i, layer)
-#select_crane_file(bet, i, layer)
+from guizero import App, Box, Text, TextBox, PushButton
 
-#print_selected(alf)
-#print_selected(bet)
+app = App(title="Crane WASP collaboration v0.1")
 
-#time.sleep(1)
+selection_box = Box(app, layout="grid", width="fill", align="bottom", border=True)
 
-#i = i + 1
+text=Text(selection_box, grid=[5,5], text="1")
 
+Text(selection_box, grid=[0,0], text="Select layer", align="left")
+layer_num = TextBox(selection_box, grid=[1,0], text="")
+layer_button = PushButton(selection_box, grid=[2,0], text="submit")
+
+Text(selection_box, grid=[0,1], text="Select gcode", align="left")
+gcode = TextBox(selection_box, grid=[1,1], text="")
+gcode_button = PushButton(selection_box, grid=[2,1], text="submit")
+
+start_button = PushButton(selection_box, grid=[2,5], text="START", command=start, args=[1])
+stop_button = PushButton(selection_box, grid=[3,5], text="STOP", command=start, args=[0],enabled=False)
+
+
+alf_box = Box(app, layout="grid", height="fill", width="fill", align="left", border=True)
+
+Text(alf_box, grid=[0,0], text="Crane A", align="left")
+
+Text(alf_box, grid=[0,1], text="IP", align="left")
+alf_ip = TextBox(alf_box, grid=[1,1], text="192.168.1.5")
+#alf_ip_button = PushButton(alf_box, grid=[2,1], text="submit")
+
+
+
+
+bet_box = Box(app, layout="grid", height="fill", width="fill", align="right", border=True)
+
+Text(bet_box, grid=[0,0], text="Crane B", align="left")
+
+Text(bet_box, grid=[0,1], text="IP", align="left")
+bet_ip = TextBox(bet_box, grid=[1,1], text="192.168.1.6")
+#bet_ip_button = PushButton(bet_box, grid=[2,1], text="submit")
+
+
+app.display()
+
+"""
+alf = (alf_ip.value,'E8A924FBF05F47BEB05D80E43AB9080B','a')
+bet = (bet_ip.value,'E8A924FBF05F47BEB05D80E43AB9080B','b')
+
+
+select_crane_file(alf, i, layer)
+select_crane_file(bet, i, layer)
+
+print_selected(alf)
+print_selected(bet)
+
+time.sleep(1)
+
+
+i = i + 1
+"""
+"""
 while True:
-    selected_alf = False
-    selected_bet = False
-
-    # oper_alf = retrieve(alf)['state']['flags']['operational']
-    # oper_bet = retrieve(bet)['state']['flags']['operational']
-    # print(retrieve(alf))
     state_text_alf = retrieve(alf)['state']['text']
     state_text_bet = retrieve(bet)['state']['text']
-
-    print(alf[2] + " " + state_text_alf + " " + str(i))
-    print(bet[2] + " " + state_text_bet + " " + str(i))
+    alf_state = alf[2] + " " + state_text_alf + " " + str(i-1)
+    alf_gui_state = Text(alf_box, grid=[0,5], text=alf_state, align="left")
+    print(bet[2] + " " + state_text_bet + " " + str(i-1))
 
     if state_text_alf == 'Operational' and state_text_bet == 'Operational':
-        print("stampa prossimo file")
+        print("ferme")
 
         if select_crane_file(alf, i, layer) == 204:
             print_selected(alf)
@@ -180,13 +276,9 @@ while True:
             i = i + 1
             selected_alf = False
             selected_bet = False
-        else:
-            if not selected_alf and not selected_bet:
-                layer = layer + 1
+                
+"""
 
-
-
-    time.sleep(1)
 
 
 """
@@ -210,3 +302,8 @@ while True:
             resume()
 
 """
+
+#host_Alf = '192.168.12.44'
+#key_Alf = 'E8A924FBF05F47BEB05D80E43AB9080B'
+#host_Bet = '192.168.12.37'
+#key_Bet = 'E8A924FBF05F47BEB05D80E43AB9080B'
