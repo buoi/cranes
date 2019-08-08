@@ -1,0 +1,203 @@
+__author__ = 'buio'
+__version__ = '0.3.0'
+
+
+# script to synchronize 2 or more OctoPrint robots by gcode scheduling
+# to run either on a master python machine, on or off-board
+# designed to operate 2 crane WASP robots simultaneously
+# to test on Jul 30
+
+import json
+import requests
+import time
+
+# coding: (host,key,gcode name identifier)
+alf = ('192.168.1.5','E8A924FBF05F47BEB05D80E43AB9080B','a')
+bet = ('192.168.1.6','E8A924FBF05F47BEB05D80E43AB9080B','b')
+
+def resume_pause(printer):
+
+    port = 8000
+    endpoint = 'job'
+    host = printer[0]
+    key = printer[1]
+    data = json.dumps(
+
+        {
+            "command": "pause",
+            "action": "resume"
+        }
+    )
+
+    headers = {
+        'Content-type': 'application/json',
+        'X-Api-Key': key,
+    }
+    r = requests.post(
+        url="http://{host}:/api/{endpoint}".format(
+            host=host,
+            port=port,
+            endpoint=endpoint
+        ),
+        data=data,
+        headers=headers
+    )
+    print("resumed")
+
+
+def retrieve(printer):
+
+    port = 8000
+    exclude = '?exclude=temperature,sd'
+    endpoint = 'printer' + exclude
+    host = printer[0]
+    key = printer[1]
+    headers = {
+        'Content-type': 'application/json',
+        'X-Api-Key': key,
+    }
+
+    r = requests.get(
+        url="http://{host}:/api/{endpoint}".format(
+            host=host,
+            port=port,
+            endpoint=endpoint
+        ),
+        headers=headers
+    )
+
+    return r.json()
+
+        #print(datastore)
+        #print(datastore['state']['flags']['paused'])
+
+
+def select_crane_file(printer,num,layer):
+    # POST / api / files / local / folder / a_10.gcode
+    # HTTP / 1.1
+    port = 8000
+    folder = str(layer)
+    endpoint = printer[2] + '_' + str(num) + ".gcode"
+    # print(endpoint)
+    host = printer[0]
+    key = printer[1]
+
+    data = json.dumps(
+        {
+            "command": "select",
+            "print": "false"
+        }
+    )
+
+    headers = {
+        'Content-type': 'application/json',
+        'X-Api-Key': key,
+    }
+    r = requests.post(
+        url="http://{host}:/api/files/local/{folder}/{endpoint}".format(
+            host=host,
+            port=port,
+            folder=folder,
+            endpoint=endpoint
+        ),
+        data=data,
+        headers=headers
+    )
+    # print("selecting " + endpoint)
+    return r.status_code
+
+
+def print_selected(printer):
+    port = 8000
+    endpoint = 'job'
+    host = printer[0]
+    key = printer[1]
+    data = json.dumps(
+
+        {
+            "command": "start"
+        }
+    )
+    headers = {
+        'Content-type': 'application/json',
+        'X-Api-Key': key,
+    }
+    r = requests.post(
+        url="http://{host}:/api/{endpoint}".format(
+            host=host,
+            port=port,
+            endpoint=endpoint
+        ),
+        data=data,
+        headers=headers
+    )
+    print("starting print on " + printer[2])
+    return r.status_code
+
+
+print("This is Crane WASP cooperative system")
+print("Good luck printing today, you'll need it!")
+print(" ")
+layer = int(input("Please select the layer number: "))
+print("Layer number ", layer, " selected")
+i = int(input("Please select first gcode number: "))
+print("Gcode number ", i, " selected")
+
+
+select_crane_file(alf, i, layer)
+select_crane_file(bet, i, layer)
+
+print_selected(alf)
+print_selected(bet)
+
+time.sleep(1)
+
+while True:
+
+    state_text_alf = retrieve(alf)['state']['text']
+    state_text_bet = retrieve(bet)['state']['text']
+
+    print(alf[2] + " " + state_text_alf + " gcode " + str(i) + " on layer " + str(layer))
+    print(bet[2] + " " + state_text_bet + " gcode " + str(i) + " on layer " + str(layer))
+
+    if state_text_alf == 'Operational' and state_text_bet == 'Operational':
+        print("stampa prossimo file")
+        i = i + 1
+
+        if select_crane_file(alf, i, layer) == 204 and select_crane_file(bet, i, layer) == 204:
+            print_selected(alf)
+            print_selected(bet)
+
+        else:
+            layer = layer + 1
+            i = 1
+            if select_crane_file(alf, i, layer) == 204 and select_crane_file(bet, i, layer) == 204:
+                print_selected(alf)
+                print_selected(bet)
+
+    time.sleep(1)
+
+
+
+
+"""
+# TODO pausa manuale
+
+# TODO che non si sbattano
+    #   angolo di entrambe
+    #   posizione macchina
+    #   conversione in polari
+
+# TODO interfaccia grafica
+    #   le precedenti +
+    #   lancette
+    
+    status = retrieve()
+
+    if status['state']['flags']['paused']:
+        print('printer one is paused')
+        print("want to resume? y/n")
+        if input() == 'y':
+            resume()
+
+"""
