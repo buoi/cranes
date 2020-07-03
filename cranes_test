@@ -12,8 +12,8 @@ import requests
 import time
 
 # coding: (host,key,gcode name identifier)
-alf = ('192.168.1.5','E8A924FBF05F47BEB05D80E43AB9080B','a')
-bet = ('192.168.1.6','E8A924FBF05F47BEB05D80E43AB9080B','b')
+alf = ('192.168.43.2','E8A924FBF05F47BEB05D80E43AB9080B','a')
+bet = ('192.168.43.3','E8A924FBF05F47BEB05D80E43AB9080B','b')
 
 def resume_pause(printer):
 
@@ -76,8 +76,8 @@ def select_crane_file(printer,num,layer):
     # POST / api / files / local / folder / a_10.gcode
     # HTTP / 1.1
     port = 8000
-    folder = str(layer)
-    endpoint = printer[2] + '_' + str(num) + ".gcode"
+    folder = str(layer) + '_' + str(layer*12+12) 
+    endpoint = str(layer) + '_' + printer[2] + '_' + str(num) + ".gcode"
     # print(endpoint)
     host = printer[0]
     key = printer[1]
@@ -170,7 +170,7 @@ while True:
 
         else:
             layer = layer + 1
-            i = 1
+            i = 0
             if select_crane_file(alf, i, layer) == 204 and select_crane_file(bet, i, layer) == 204:
                 print_selected(alf)
                 print_selected(bet)
