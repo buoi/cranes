@@ -1,5 +1,5 @@
 __author__ = 'buio'
-__version__ = '0.4.0'
+__version__ = '0.5.0'
 
 
 # script to synchronize 2 or more OctoPrint robots by gcode scheduling
@@ -10,10 +10,6 @@ __version__ = '0.4.0'
 import json
 import requests
 import time
-
-# coding: (host,key,gcode name identifier)
-alf = ('192.168.43.2','E8A924FBF05F47BEB05D80E43AB9080B','a')
-bet = ('192.168.43.3','E8A924FBF05F47BEB05D80E43AB9080B','b')
 
 def resume_pause(printer):
 
@@ -76,7 +72,7 @@ def select_crane_file(printer,num,layer):
     # POST / api / files / local / folder / a_10.gcode
     # HTTP / 1.1
     port = 8000
-    folder = str(layer) + '_' + str(layer*12+12) 
+    folder = str(layer) + '_' + str(layer*12+12)
     endpoint = str(layer) + '_' + printer[2] + '_' + str(num) + ".gcode"
     # print(endpoint)
     host = printer[0]
@@ -134,51 +130,72 @@ def print_selected(printer):
     print("starting print on " + printer[2])
     return r.status_code
 
+# coding: (host,key,gcode name identifier)
+alf = ('192.168.43.2','E8A924FBF05F47BEB05D80E43AB9080B','a')
+bet = ('192.168.43.3','E8A924FBF05F47BEB05D80E43AB9080B','b')
 
 print("This is Crane WASP cooperative system")
 print("Good luck printing today, you'll need it!")
 print(" ")
 layer = int(input("Please select the layer number: "))
 print("Layer number ", layer, " selected")
-i = int(input("Please select first gcode number: "))
+i = int(input("Please select sector number: "))
 print("Gcode number ", i, " selected")
 
+#select_crane_file(alf, i, layer)
+#select_crane_file(bet, i, layer)
 
-select_crane_file(alf, i, layer)
-select_crane_file(bet, i, layer)
-
-print_selected(alf)
-print_selected(bet)
+#print_selected(alf)
+#print_selected(bet)
 
 time.sleep(1)
 
+string_state_a = ''
+string_state_b = ''
+
 while True:
 
-    state_text_alf = retrieve(alf)['state']['text']
-    state_text_bet = retrieve(bet)['state']['text']
+    state_alf = retrieve(alf)['state']['text']
+    state_bet = retrieve(bet)['state']['text']
 
-    print(alf[2] + " " + state_text_alf + " gcode " + str(i) + " on layer " + str(layer))
-    print(bet[2] + " " + state_text_bet + " gcode " + str(i) + " on layer " + str(layer))
+    ssa = alf[2] + " " + state_alf + ", sector " + str(i) + " on layer " + str(layer)
+    ssb = bet[2] + " " + state_bet + ", sector " + str(i) + " on layer " + str(layer)
 
-    if state_text_alf == 'Operational' and state_text_bet == 'Operational':
-        print("stampa prossimo file")
-        i = i + 1
+    # print updates on file or layer
+    if ssa != string_state_a:
+        string_state_a = ssa
+        print(string_state_a)
 
-        if select_crane_file(alf, i, layer) == 204 and select_crane_file(bet, i, layer) == 204:
+    if ssb != string_state_b:
+        string_state_b = ssb
+        print(string_state_b)
+
+    if state_alf == 'Operational' and state_bet == 'Operational':
+
+        print("printing next file")
+        response_a = select_crane_file(alf, i, layer)
+        response_b = select_crane_file(bet, i, layer)
+
+        if response_a == 204 and response_b == 204:
             print_selected(alf)
             print_selected(bet)
+            # suppose that !=204, so the file is not there
 
         else:
-            layer = layer + 1
-            i = 0
-            if select_crane_file(alf, i, layer) == 204 and select_crane_file(bet, i, layer) == 204:
-                print_selected(alf)
-                print_selected(bet)
+            if response_a == 204 or response_b == 204: # only one is missing
+                print("FILE MISMATCH!", end=' ')
+                if response_a == 204:
+                    print("MISSING B: ", str(layer)+'_'+'b'+str(i))
+                else:
+                    print("MISSING A: ", str(layer)+'_'+'a'+str(i))
+                quit()
+
+            layer += 1
+            i = -1
+
+        i += 1
 
     time.sleep(1)
-
-
-
 
 """
 # TODO pausa manuale
@@ -191,7 +208,7 @@ while True:
 # TODO interfaccia grafica
     #   le precedenti +
     #   lancette
-    
+
     status = retrieve()
 
     if status['state']['flags']['paused']:
